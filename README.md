@@ -4,61 +4,186 @@
       <img src="https://strandsagents.com/latest/assets/logo-github.svg" alt="Strands Agents" width="55px" height="105px">
     </a>
   </div>
-  <h1>Strands Agents Extension Template</h1>
-  <h2>Build and publish custom components for Strands Agents.</h2>
+  <h1>Strands Agents Extension Template — Python</h1>
+  <h2>Build and publish custom Python components for Strands Agents.</h2>
   <p>
     <a href="https://strandsagents.com/">Documentation</a> ◆
     <a href="https://github.com/strands-agents/sdk-python">Python SDK</a> ◆
-    <a href="https://github.com/strands-agents/sdk-typescript">TypeScript SDK</a> ◆
     <a href="https://github.com/strands-agents/tools">Tools</a> ◆
     <a href="https://strandsagents.com/docs/community/community-packages/">Community Packages</a>
   </p>
 </div>
 
-This monorepo contains starter templates for building custom Strands Agents extensions in two languages. Each template gives you skeletons for the major extension points, an interactive setup script that customizes the project for your package, and CI/publish workflows wired up to PyPI or npm.
+This template helps you build and publish custom components for [Strands Agents](https://github.com/strands-agents/sdk-python). Whether you're creating a new tool, model provider, or session manager, this directory gives you a starting point with the right structure and conventions.
 
-| Language   | Directory                  | Package registry | SDK                                                      |
-|------------|----------------------------|------------------|----------------------------------------------------------|
-| Python     | [`python/`](./python)      | PyPI             | [`strands-agents`](https://pypi.org/project/strands-agents/) |
-| TypeScript | [`typescript/`](./typescript) | npm           | [`@strands-agents/sdk`](https://www.npmjs.com/package/@strands-agents/sdk) |
 
 ## Getting started
 
-1. Click **Use this template** on GitHub to create your own repository.
-2. Clone it locally and decide which language you're targeting.
-3. Open the corresponding subdirectory and follow its README:
-   - Python → [`python/README.md`](./python/README.md)
-   - TypeScript → [`typescript/README.md`](./typescript/README.md)
+### 1. Create your repository
 
-You can keep both subprojects in the same repo if your package ships SDKs in both languages, or delete the directory you don't need.
+Click "Use this template" on GitHub to create your own repository. Then clone it locally and switch into this directory:
 
-## What's in each template
+```bash
+git clone https://github.com/olostep-api/your-repo-name
+cd your-repo-name
+```
 
-Both templates expose the same eight Strands extension points so you can pick whichever fits your use case:
+### 2. Install dependencies
 
-| Component            | Purpose                                                |
-|----------------------|--------------------------------------------------------|
-| Tool                 | Add capabilities to agents using the `tool` primitive  |
-| Model provider       | Integrate custom LLM APIs                              |
-| Plugin               | Bundle hooks and tools into a composable package       |
-| Intervention         | Add composable control handlers for authorization, guardrails, and steering |
-| Session manager      | Persist conversations across restarts                  |
-| Conversation manager | Control context window and message history            |
-| Memory store         | Give agents cross-session knowledge via a search backend |
-| Storage              | Persist raw bytes under string keys for sessions, offloading, etc. |
+```bash
+pip install -e ".[dev]"
+```
 
-The interactive setup script in each subdirectory removes the components you don't select, renames everything to your package name, and wires up `pyproject.toml` / `package.json` accordingly.
+## What's in this template
 
-## Releases and tags
+The template includes skeleton implementations for all major Strands extension points.
 
-Releases are scoped per language so the two halves of this monorepo can ship independently:
+| File | Component | Purpose |
+|------|-----------|---------|
+| `tool.py` | Tool | Add capabilities to agents using the `@tool` decorator |
+| `model.py` | Model provider | Integrate custom LLM APIs |
+| `plugin.py` | Plugin | Extend agent behavior with hooks and tools in a composable package |
+| `intervention.py` | Intervention | Add composable control handlers for authorization, guardrails, and steering |
+| `session_manager.py` | Session manager | Persist conversations across restarts |
+| `conversation_manager.py` | Conversation manager | Control context window and message history |
+| `memory_store.py` | Memory store | Give agents cross-session knowledge via a search backend |
 
-| Tag prefix    | Workflow                                        | Publishes to |
-|---------------|-------------------------------------------------|--------------|
-| `python-v*`   | [`publish-python.yml`](.github/workflows/publish-python.yml)         | PyPI         |
-| `typescript-v*` | [`publish-typescript.yml`](.github/workflows/publish-typescript.yml) | npm          |
+The setup script will remove components you don't select, so you only keep what you need.
 
-When the setup script hoists your chosen language to the repo root, it drops the dual-prefix scheme automatically — generated repos use the standard `v*` tag form.
+## Implementing your components
+
+Each file contains a minimal skeleton. Here's what to implement:
+
+### Tools
+
+Tools let agents interact with external systems and perform actions. Implement your logic inside the decorated function and return a result dict.
+
+- [Creating custom tools](https://strandsagents.com/docs/user-guide/concepts/tools/custom-tools/) — Documentation
+- [sleep](https://github.com/strands-agents/tools/blob/main/src/strands_tools/sleep.py) — Simple tool with error handling
+- [browser](https://github.com/strands-agents/tools/blob/main/src/strands_tools/browser/__init__.py) — Multi-tool package example
+
+### Plugins
+
+Plugins provide a composable way to extend agent behavior by bundling hooks and tools into a single package. Use `@hook` to react to agent lifecycle events and `@tool` to add capabilities, all auto-discovered and registered when the plugin is attached to an agent.
+
+- [Plugins](https://strandsagents.com/docs/user-guide/concepts/plugins/) — Documentation
+- [AgentSkills](https://github.com/strands-agents/harness-sdk/tree/main/strands-py/src/strands/vended_plugins/skills) — Plugin example with hooks and tools
+- [Steering](https://github.com/strands-agents/harness-sdk/tree/main/strands-py/src/strands/vended_plugins/steering) — Advanced plugin example
+
+### Interventions
+
+Intervention handlers provide composable control layers for agents. Override lifecycle methods (like `before_tool_call`) to intercept events and return typed decisions: Proceed, Deny, Guide, Confirm, or Transform. Use them for authorization checks, guardrails, and human-in-the-loop approval.
+
+- [Interventions](https://strandsagents.com/docs/user-guide/concepts/agents/interventions/) — Documentation
+- [Vended interventions](https://github.com/strands-agents/harness-sdk/tree/main/strands-py/src/strands/vended_interventions) — Cedar authorization, HITL, and steering examples
+
+### Model providers
+
+Model providers connect agents to LLM APIs. Implement the `stream()` method to receive messages and yield streaming events.
+
+- [Custom providers](https://strandsagents.com/docs/user-guide/concepts/model-providers/custom_model_provider/) — Documentation
+- [strands-clova](https://github.com/aidendef/strands-clova) — Community model provider example
+
+### Session managers
+
+Session managers persist conversations to external storage, enabling conversations to resume after restarts or be shared across instances.
+
+- [Session management](https://strandsagents.com/docs/user-guide/concepts/agents/session-management/) — Documentation
+- [File session manager](https://github.com/strands-agents/harness-sdk/blob/main/strands-py/src/strands/session/file_session_manager.py) — Implementation example
+
+### Conversation managers
+
+Conversation managers control the context window and how message history grows over time. They handle trimming old messages or summarizing context to stay within model limits.
+
+- [Conversation management](https://strandsagents.com/docs/user-guide/concepts/agents/conversation-management/) — Documentation
+- [Sliding window manager](https://github.com/strands-agents/harness-sdk/blob/main/strands-py/src/strands/agent/conversation_manager/sliding_window_conversation_manager.py) — Implementation example
+
+### Memory stores
+
+Memory stores give agents cross-session knowledge. A `MemoryManager` searches one or more stores to recall facts and, for writable stores, writes new ones. Implement `search()` to back memory with your own store — a vector database, a managed search service, or any system that retrieves entries by relevance. For writes, implement whichever sinks fit your backend. `add()` for adding an extracted memory. For discrete-entry backend (e.g. a vector DB), only implement this method. `add_messages()` for ingesting raw conversation turns to extract server-side. Only implement this for backends that support server side extraction. Store identity and behavior (`name`, `description`, `max_search_results`, `writable`, `extraction`) come from config via `MemoryStoreConfig`, matching the SDK's own stores; extend `OlostepMemoryStoreConfig` with any backend-specific fields.
+
+- [Memory](https://strandsagents.com/docs/user-guide/concepts/memory/overview/) — Documentation
+- [Bedrock Knowledge Base store](https://github.com/strands-agents/harness-sdk/tree/main/strands-py/src/strands/vended_memory_stores/bedrock_knowledge_base) — Implementation example
+
+## Testing
+
+Run all checks (format, lint, typecheck, test):
+
+```bash
+hatch run prepare
+```
+
+Or run them individually:
+
+```bash
+hatch run test        # Run tests
+hatch run lint        # Run linter
+hatch run typecheck   # Run type checker
+hatch run format      # Format code
+```
+
+## Publishing to PyPI
+
+You can publish manually or through GitHub Actions.
+
+### Option 1: GitHub release (recommended)
+
+The included workflow automatically publishes to PyPI when you create a GitHub release. Version is derived from the git tag automatically.
+
+1. Configure PyPI trusted publishing first (see below)
+2. Create a release on GitHub with a tag prefixed `v`, e.g. `v0.1.0`. hatch-vcs strips the prefix so the package version is just `0.1.0`.
+3. The workflow runs checks, builds, and publishes
+
+To configure PyPI trusted publishing:
+
+1. Go to PyPI → Your projects → Publishing
+2. Add a new pending publisher with your GitHub repo details
+3. Set environment name to `pypi`
+
+**Note:** If you create a release without configuring trusted publishing, the workflow will fail. Set this up before your first release.
+
+### Option 2: Manual publish
+
+```bash
+hatch build
+pip install twine
+twine upload dist/*
+```
+
+## Naming conventions
+
+Follow these conventions so your package fits the Strands ecosystem:
+
+| Item | Convention | Example |
+|------|------------|---------|
+| PyPI package | `strands-{name}` | `strands-amazon` |
+| Python module | `strands_{name}` | `strands_amazon` |
+| Model class | `{Name}Model` | `AmazonModel` |
+| Plugin class | `{Name}Plugin` | `AmazonPlugin` |
+| Intervention class | `{Name}Intervention` | `CedarIntervention` |
+| Session manager | `{Name}SessionManager` | `RedisSessionManager` |
+| Conversation manager | `{Name}ConversationManager` | `SummarizingConversationManager` |
+| Memory store | `{Name}MemoryStore` | `RedisMemoryStore` |
+| Tool function | `{descriptive_name}` | `search_web`, `send_email` |
+
+## Get featured
+
+Help others discover your package by adding the `strands-agents` topic to your GitHub repository. This makes it easier for the community to find Strands extensions.
+
+To add topics: go to your repo → click the ⚙️ gear next to "About" → add `strands-agents` and other relevant topics.
+
+You can also submit your package to be featured on the Strands website. See [Get Featured](https://strandsagents.com/docs/community/get-featured/) for details.
+
+## Resources
+
+- [Strands Agents documentation](https://strandsagents.com/)
+- [SDK Python repository](https://github.com/strands-agents/sdk-python)
+- [Official tools repository](https://github.com/strands-agents/tools)
+- [Community packages](https://strandsagents.com/docs/community/community-packages/)
+
+## Security
+
+See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
 
 ## License
 
